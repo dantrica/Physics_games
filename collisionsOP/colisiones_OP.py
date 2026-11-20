@@ -1,37 +1,38 @@
 # -*- coding: utf-8 -*-
 """
-===============================================================================
-  CONSERVACIÓN DEL MOMENTUM LINEAL  -  Simulador / videojuego de colisiones
-===============================================================================
-Asteroides y planetas chocan en 2D. En tiempo real se puede comprobar que
+
+-------------------------------------------------------------------------------
+  LINEAR MOMENTUM CONSERVATION  -  collisions video game
+-------------------------------------------------------------------------------
+Asteroids and planets collide in 2D. In real time, it can be verified that
 
         Σ p = Σ m_i v_i   (vector)
 
-se conserva en TODO choque (sistema aislado), mientras que la energía cinética
-solo se conserva en el choque elástico.
+is conserved in EVERY collision (isolated system), whereas kinetic energy
+is only conserved in elastic collisions.
 
-REQUISITOS : Python 3 + pygame            ->   pip install pygame
-             (en la consola de Spyder:        %pip install pygame)
-EJECUCIÓN  : abrir este archivo en Spyder y pulsar F5 (Run file).
-             Si la ventana queda detrás de Spyder, búscala en la barra de tareas.
+REQUIREMENTS : Python 3 + pygame            ->   pip install pygame
+               (in the Spyder console:           %pip install pygame)
+EXECUTION    : open this file in Spyder and press F5 (Run file).
+               If the window stays behind Spyder, look for it in the taskbar.
 
-FÍSICA IMPLEMENTADA
-  * Cuerpos circulares con masa m = DENSIDAD * r^3  (unidades SI: m, kg, s).
-  * Choque entre dos cuerpos (sin fricción) con coeficiente de restitución e:
-        impulso   J = (1 + e) * (v1 - v2)·n / (1/m1 + 1/m2)
+IMPLEMENTED PHYSICS
+  * Circular bodies with mass m = DENSITY * r^3  (SI units: m, kg, s).
+  * Collision between two bodies (frictionless) with coefficient of restitution e:
+        impulse   J = (1 + e) * (v1 - v2)·n / (1/m1 + 1/m2)
         v1' = v1 - (J/m1) n          v2' = v2 + (J/m2) n
-    Las fuerzas de contacto son iguales y opuestas -> Σp se conserva EXACTO
-    (hasta el error de redondeo, que se muestra en pantalla).
-        e = 1  -> elástico (K se conserva)
-        0<e<1  -> inelástico (K disminuye)
-        fusión -> perfectamente inelástico: los cuerpos se pegan y
-                  v_final = Σp / M   (pérdida máxima de K en el marco CM)
-  * Gravedad mutua opcional (tecla G): es una fuerza INTERNA (3ª ley de
-    Newton), así que Σp tampoco cambia.
-  * Paredes opcionales (tecla B): son una fuerza EXTERNA; ahí Σp sí cambia y
-    el programa muestra el impulso que entregan las paredes (teorema
-    impulso-momentum).
-===============================================================================
+    Contact forces are equal and opposite -> Σp is EXACTLY conserved
+    (up to the rounding error, which is displayed on screen).
+        e = 1  -> elastic (K is conserved)
+        0<e<1  -> inelastic (K decreases)
+        fusion -> perfectly inelastic: the bodies stick together and
+                  v_final = Σp / M   (maximum loss of K in the CM frame)
+  * Optional mutual gravity (G key): it is an INTERNAL force (Newton's
+    3rd law), so Σp does not change either.
+  * Optional walls (B key): they are an EXTERNAL force; there Σp does change,
+    and the program displays the impulse delivered by the walls 
+    (impulse-momentum theorem).
+-------------------------------------------------------------------------------
 """
 
 import math
@@ -39,7 +40,7 @@ import random
 from collections import deque
 import pygame
 
-# =============================  PARÁMETROS  ==================================
+# --------------------------  PARAMETERS  -------------------------------------
 ANCHO, ALTO = 1240, 720          # tamaño de la ventana (px)
 ANCHO_SIM = 860                  # ancho de la zona de simulación (px)
 FPS = 60
@@ -83,7 +84,7 @@ PALETA_ASTEROIDE = [(150, 140, 130), (125, 118, 110), (170, 160, 150),
                     (140, 130, 125)]
 
 
-# ===========================  FÍSICA (sin pygame)  ===========================
+# -----------------------------  Physics  ------------------------------------
 class Cuerpo:
     """Disco rígido: posición y radio en m, velocidad en m/s, masa en kg."""
     contador = 0
@@ -131,7 +132,7 @@ class Mundo:
         self.destellos = []                 # [x, y, edad] anillos visuales de choque
         self.reiniciar()
 
-    # ------------------------------------------------------------------ estado
+    # -------------------------- state ---------------------------------------
     def reiniciar(self):
         Cuerpo.contador = 0
         self.cuerpos = []
@@ -158,7 +159,7 @@ class Mundo:
             self.cuerpos.remove(cuerpo)
         self.fijar_referencia()
 
-    # ------------------------------------------------------------ magnitudes
+    # -------------------- Physical quantities -----------------------------------
     def momento_total(self):
         return (sum(c.px for c in self.cuerpos), sum(c.py for c in self.cuerpos))
 
@@ -331,7 +332,7 @@ class Mundo:
         self.destellos = [d for d in self.destellos if d[2] < 30]
 
 
-# ===============================  CÁMARA  ====================================
+# --------------------------------  CAMERA  ------------------------------
 class Camara:
     """Convierte metros <-> píxeles. Puede seguir al centro de masa."""
 
@@ -362,7 +363,7 @@ class Camara:
         return ((sx - CX0_PX) / ESCALA + self.x, (sy - CY0_PX) / ESCALA + self.y)
 
 
-# ===============================  ESCENARIOS  ================================
+# -----------------------------  SCENES  ------------------------------------
 ESCENARIOS = {
     0: ("Espacio vacío",
         ["Lanza tus propios cuerpos: clic y arrastra (la flecha fija la velocidad).",
@@ -388,7 +389,7 @@ ESCENARIOS = {
 }
 
 
-# ================================  JUEGO  ====================================
+# --------------------------------  GAME  -------------------------------------
 class Juego:
     def __init__(self):
         pygame.init()
@@ -426,7 +427,7 @@ class Juego:
 
         self.cargar_escenario(1)
 
-    # ------------------------------------------------------------ escenarios
+    # ---------------------------- Scenes ------------------------------------
     def cargar_escenario(self, n):
         self.escenario = n
         m = self.mundo
@@ -486,7 +487,7 @@ class Juego:
             c.vy -= vcy
             self.mundo.agregar(c)
 
-    # ------------------------------------------------------------- entradas
+    # ------------------------------------ inputs ---------------------------
     def vref(self):
         """Velocidad del marco de la vista (0 en el marco del laboratorio)."""
         cm = self.mundo.centro_masa()
@@ -574,7 +575,7 @@ class Juego:
                     self.lanzar(self.arrastre, ev.pos)
                     self.arrastre = None
 
-    # ------------------------------------------------------------ actualizar
+    # ------------------------------------ updating ------------------------------------
     def actualizar(self):
         if not self.pausa:
             dt = (1.0 / FPS) * self.factores[self.idx_t] / SUBPASOS
@@ -583,7 +584,7 @@ class Juego:
             self.mundo.registrar()
         self.cam.actualizar(self.mundo)
 
-    # --------------------------------------------------------------- dibujo
+    # ------------------------------------ draw ------------------------------------
     def texto(self, s, x, y, fuente=None, color=BLANCO):
         self.pantalla.blit((fuente or self.f_n).render(s, True, color), (x, y))
 
@@ -888,7 +889,7 @@ class Juego:
         p.set_clip(None)
         self.dibujar_panel()
 
-    # ------------------------------------------------------------ bucle
+    # ---------------------------------- bucle ----------------------------------
     def ejecutar(self):
         try:
             while self.corriendo:
